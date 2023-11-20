@@ -1,4 +1,4 @@
-package com.kob.backend1.controller.user.controller;
+package com.kob.backend1.controller.user.bot;
 
 import com.kob.backend1.service.user.bot.AddService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,12 +10,11 @@ import java.util.Map;
 
 @RestController
 public class AddController {
-
     @Autowired
     private AddService addService;
 
     @PostMapping("/user/bot/add/")
-    public Map<String,String> add(@RequestParam Map<String,String> data){
+    public Map<String,String> add(@RequestParam Map<String,String> data) {
         return addService.add(data);
     }
 }

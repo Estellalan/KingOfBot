@@ -22,7 +22,7 @@ public class Bot {
     private String content;
     private Integer rating;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")//定义日期格式
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")//定义日期的展示格式
     private Date createtime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date modifytime;
