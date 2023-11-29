@@ -29,6 +29,7 @@ public class UpdateServiceImpl implements UpdateService {
 
         int bot_id = Integer.parseInt(data.get("bot_id"));
 
+
         String title = data.get("title");
         String description = data.get("description");
         String content = data.get("content");

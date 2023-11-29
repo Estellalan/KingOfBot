@@ -3,11 +3,12 @@ import { Snake } from "./Snake";
 import { Wall } from "./Wall";
 
 export class GameMap extends AcGameObject {
-    constructor(ctx,parent){//这里传的参数是画布和画布父元素
+    constructor(ctx,parent,store){//这里传的参数是画布和画布父元素
         super();//执行基类构造函数
 
         this.ctx = ctx;
         this.parent = parent;
+        this.store = store;
         this.L = 0;//定义一个格子的绝对距离，我们计划的地图为13*13
 
         this.rows=13;
@@ -23,73 +24,21 @@ export class GameMap extends AcGameObject {
 
     }
 
-    check_connectivity(g,sx,sy,tx,ty){
-         if(sx==tx&&sy==ty) return true;
-         g[sx][sy]=true;
-
-         let dx = [-1,0,1,0];
-         let dy = [0,1,0,-1];
-
-         for(let i=0;i<4;i++){
-            let x=sx+dx[i];
-            let y=sy+dy[i];
-
-            if(!g[x][y]&&this.check_connectivity(g,x,y,tx,ty))return true;
-         }
-
-         return false;
-    }
 
     create_walls(){
-        const g = [];
-        for(let r=0;r<=this.rows;r++){
-            g[r] = [];
-            for(let c=0;c<=this.cols;c++){
-                g[r][c]=false;
-            }
-        }
+        const g = this.store.state.pk.gamemap;
 
-        //给四周加上障碍物
-        for(let r=0;r<=this.rows;r++){
-            g[r][0]=g[r][this.cols-1]=true;
-        }
+        //console.log("地图： "+g);
 
-        for(let c=0;c<=this.cols;c++){
-            g[0][c]=g[this.rows-1][c]=true;
-        }
-
-        //创建随机障碍物
-        for(let i=0;i<this.inner_walls_count/2;i++){
-            for(let j=0;j<1000;j++){
-                let r = parseInt(Math.random()*this.rows);
-                let c = parseInt(Math.random()*this.cols);
-
-                let x=this.rows-1-r;
-                let y=this.cols-1-c;
-
-                if(g[r][c]||g[x][y])continue;
-
-                if(r==this.rows-2&&c==1)continue;
-                if(r==1&&c==this.cols-2)continue;
-
-                g[r][c]=g[x][y]=true;
-                break;
-            }
-        }
-
-        const copy_g = JSON.parse(JSON.stringify(g));
-
-        if(!this.check_connectivity(copy_g,this.rows-2,1,1,this.cols-2)) return false;
-
-        for(let r=0;r<=this.rows;r++){
-            for(let c=0;c<=this.cols;c++){
+        for(let r=0;r<this.rows;r++){
+            for(let c=0;c<this.cols;c++){
+                //console.log(r+" "+c+" "+"***"+g[r][c]);
                 if(g[r][c]){
                     this.walls.push(new Wall(r,c,this));
                 }
             }
         }
 
-        return true;
     }
 
     add_listening_events() {
@@ -112,9 +61,7 @@ export class GameMap extends AcGameObject {
     }
 
     start() {
-        for (let i = 0; i < 1000; i ++ ) 
-            if (this.create_walls())
-                break;
+        this.create_walls();
         
         this.add_listening_events();
     }
