@@ -2,6 +2,7 @@ package com.kob.backend1.consumer;
 import com.alibaba.fastjson.JSONObject;
 import com.kob.backend1.consumer.utils.Game;
 import com.kob.backend1.consumer.utils.JwtAuthentication;
+import com.kob.backend1.mapper.RecordMapper;
 import com.kob.backend1.mapper.UserMapper;
 import com.kob.backend1.pojo.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @ServerEndpoint("/websocket/{token}")  // 注意不要以'/'结尾
 public class WebSocketServer {
 
-    //private Game game = null;
+    private Game game = null;
 
     /**
      * 由于WebSocket其实不算spring的一部分，并不是单例模式，所以这里注入mapper时方法如下
@@ -30,6 +31,12 @@ public class WebSocketServer {
         WebSocketServer.userMapper=userMapper;
     }
 
+    public static RecordMapper recordMapper;
+    @Autowired
+    public void setRecordMapper(RecordMapper recordMapper) {
+        WebSocketServer.recordMapper = recordMapper;
+    }
+
     /**
      * 1.users是所有实例都可以访问的，所以这里定义成静态变量
      * （无论有多少个类的实例，静态变量只有一份副本，被该类的所有实例共享。静态变量也称为类变量。）
@@ -38,7 +45,7 @@ public class WebSocketServer {
      * 它在多线程环境中能够正确地处理共享数据结构，
      * 使得多个线程可以并行执行而不会导致数据损坏或不可预期的行为。）
      */
-    final private static ConcurrentHashMap<Integer,WebSocketServer> users = new ConcurrentHashMap<>();
+    final public  static ConcurrentHashMap<Integer,WebSocketServer> users = new ConcurrentHashMap<>();
 
     final private static CopyOnWriteArraySet<User> matchpool = new CopyOnWriteArraySet<>();
 
@@ -72,6 +79,14 @@ public class WebSocketServer {
         }
     }
 
+    private void move(int direction) {
+        if(game.getPlayerA().getId().equals(user.getId())){
+            game.setNextStepA((direction));
+        }else if( game.getPlayerB().getId().equals(user.getId())){
+            game.setNextStepB(direction);
+        }
+    }
+
     @OnMessage
     public void onMessage(String message, Session session) {
         // 从Client接收消息
@@ -83,6 +98,8 @@ public class WebSocketServer {
             startMatching();
         } else if("stop-matching".equals(event)){
             stopMatching();
+        } else if ("move".equals(event)) {
+            move(data.getInteger("direction"));
         }
     }
 
@@ -101,21 +118,34 @@ public class WebSocketServer {
             matchpool.remove(a);
             matchpool.remove(b);
 
-            Game game = new Game(13, 14, 20);
+            Game game = new Game(13, 14, 20, a.getId(), b.getId());
             game.createMap();
+            game.start();//启动线程
+
+            users.get(a.getId()).game = game;
+            users.get(b.getId()).game = game;
+
+            JSONObject respGame = new JSONObject();
+            respGame.put("a_id", game.getPlayerA().getId());
+            respGame.put("a_sx", game.getPlayerA().getSx());
+            respGame.put("a_sy", game.getPlayerA().getSy());
+            respGame.put("b_id", game.getPlayerB().getId());
+            respGame.put("b_sx", game.getPlayerB().getSx());
+            respGame.put("b_sy", game.getPlayerB().getSy());
+            respGame.put("map", game.getG());
 
             JSONObject respA = new JSONObject();
             respA.put("event","start-matching");
             respA.put("opponent_username",b.getUsername());
             respA.put("opponent_photo",b.getPhoto());
-            respA.put("gamemap",game.getG());
+            respA.put("game",respGame);
             users.get(a.getId()).sendMessage(respA.toJSONString());
 
             JSONObject respB = new JSONObject();
             respB.put("event","start-matching");
             respB.put("opponent_username",a.getUsername());
             respB.put("opponent_photo",a.getPhoto());
-            respB.put("gamemap",game.getG());
+            respB.put("game",respGame);
             users.get(b.getId()).sendMessage(respB.toJSONString());
         }
 

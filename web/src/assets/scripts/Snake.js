@@ -69,10 +69,6 @@ export class Snake extends AcGameObject{
             this.cells[i]=JSON.parse(JSON.stringify(this.cells[i-1]));
         }
 
-        if (!this.gamemap.check_valid(this.next_cell)) {  // 下一步操作撞了，蛇瞬间去世
-            this.status = "die";
-        }
-
         this.eye_direction=0;
         if(this.id === 1) this.eye_direction=2;//左下角的蛇初始朝上，右上角的蛇初始朝下
    
